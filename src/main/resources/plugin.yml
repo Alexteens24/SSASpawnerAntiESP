@@ -1,0 +1,15 @@
+name: SSASpawnerAntiESP
+main: com.vanillage.ssaspawnerantiesp.SSASpawnerAntiESP
+version: ${pluginVersion}
+api-version: '${apiVersion}'
+description: Hides SmartSpawner blocks without line of sight using async DDA ray tracing.
+load: POSTWORLD
+depend:
+- SmartSpawner
+folia-supported: true
+commands:
+  ssaspawnerantiesp:
+    description: SSASpawnerAntiESP commands.
+    usage: '§cUsage: /<command> reload'
+    permission: ssaspawnerantiesp.command.reload
+    permission-message: §cYou don't have permissions.

@@ -1,0 +1,15 @@
+# SSASpawnerAntiESP — hides SmartSpawner block positions without line of sight.
+# Much lighter than RayTraceAntiXray: only traces known spawner coordinates (not every ore in each chunk).
+
+settings:
+  update-ticks: 1
+  ms-per-ray-trace-tick: 50
+  ray-trace-threads: 1
+
+world-settings:
+  default:
+    enabled: true
+    ray-trace-distance: 64.0
+    rehide-blocks: true
+    rehide-distance: 60.0
+    section-leap: false
