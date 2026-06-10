@@ -12,6 +12,8 @@ Players cannot see spawners through walls — their client receives a decoy bloc
 
 Supports **Paper** and **Folia**.
 
+![Showcase](showcase.gif)
+
 ---
 
 ## Requirements

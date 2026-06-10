@@ -12,6 +12,8 @@ Player không nhìn thấy spawner qua tường — client chỉ nhận block gi
 
 Hỗ trợ **Paper** và **Folia**.
 
+![Showcase](showcase.gif)
+
 ---
 
 ## Yêu cầu
