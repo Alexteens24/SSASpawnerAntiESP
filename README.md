@@ -1,66 +1,68 @@
 # SSASpawnerAntiESP
 
+**Tiếng Việt:** [README.vi.md](README.vi.md)
+
 [![Build](https://github.com/Alexteens24/SSASpawnerAntiESP/actions/workflows/build.yml/badge.svg)](https://github.com/Alexteens24/SSASpawnerAntiESP/actions/workflows/build.yml)
 
-Plugin addon cho [SmartSpawner](https://github.com/NighterDevelopment/SmartSpawner): **ẩn block spawner khỏi player không có tầm nhìn thẳng** (chống ESP / x-ray spawner).
+Addon for [SmartSpawner](https://github.com/NighterDevelopment/SmartSpawner) that **hides spawner blocks from players without line of sight** (anti-ESP / spawner x-ray).
 
-Player không nhìn thấy spawner qua tường — client chỉ nhận block giả (đá, deepslate, …). Khi có line of sight, spawner hiện lại bình thường.
+Players cannot see spawners through walls — their client receives a decoy block (stone, deepslate, etc.) instead. When line of sight is clear, the real spawner is shown again.
 
-> **Lưu ý:** Plugin chỉ thay đổi **giao diện phía client** từng player. Dữ liệu spawner trên server, SmartSpawner và lệnh admin (ví dụ `/ss list`) **không bị ảnh hưởng**.
+> **Note:** This plugin only changes **each player's client view**. Server-side spawner data, SmartSpawner, and admin commands (e.g. `/ss list`) are **not affected**.
 
-Hỗ trợ **Paper** và **Folia**.
+Supports **Paper** and **Folia**.
 
 ---
 
-## Yêu cầu
+## Requirements
 
-| Thành phần | Phiên bản |
-|------------|-----------|
-| Server | **Paper** `1.21.11` hoặc `26.1.2` |
+| Component | Version |
+|-----------|---------|
+| Server | **Paper** `1.21.11` or `26.1.2` |
 | SmartSpawner | `1.6.2+` (Paper 1.21.11) · `1.6.7+` (Paper 26.1.2) |
 | Java | `21` (Paper 1.21.11) · `25` (Paper 26.1.2) |
 
-**Bắt buộc** cài SmartSpawner trước. SSASpawnerAntiESP sẽ tự tắt nếu không tìm thấy SmartSpawner API.
+**SmartSpawner must be installed first.** SSASpawnerAntiESP disables itself if the SmartSpawner API is unavailable.
 
 ---
 
-## Tải plugin
+## Download
 
-Chọn **đúng file JAR** theo phiên bản Paper server:
+Use the **correct JAR** for your Paper version:
 
-| Phiên bản Paper | Tên file |
-|-----------------|----------|
+| Paper version | File name |
+|---------------|-----------|
 | 1.21.11 | `SSASpawnerAntiESP-*-1.21.11.jar` |
 | 26.1.2 | `SSASpawnerAntiESP-*-26.1.2.jar` |
 
-Tải tại:
+Available from:
 
-- [Releases](https://github.com/Alexteens24/SSASpawnerAntiESP/releases) (bản phát hành chính thức)
-- [GitHub Actions](https://github.com/Alexteens24/SSASpawnerAntiESP/actions) → chọn workflow run mới nhất → mục **Artifacts**
-
----
-
-## Cài đặt
-
-1. Cài **SmartSpawner** và khởi động server một lần.
-2. Copy file JAR đúng phiên bản vào thư mục `plugins/`.
-3. Khởi động lại server.
-4. (Tuỳ chọn) Chỉnh `plugins/SSASpawnerAntiESP/config.yml` rồi dùng `/ssaspawnerantiesp reload`.
+- [Releases](https://github.com/Alexteens24/SSASpawnerAntiESP/releases) (official builds)
+- [GitHub Actions](https://github.com/Alexteens24/SSASpawnerAntiESP/actions) → latest workflow run → **Artifacts**
 
 ---
 
-## Cách hoạt động
+## Installation
 
-1. Khi bật plugin, lấy danh sách tọa độ spawner từ SmartSpawner.
-2. Định kỳ kiểm tra từ vị trí mắt player tới các spawner gần đó — có bị block che hay không.
-3. **Không nhìn thấy** → gửi packet thay block spawner bằng block giả trên client player đó.
-4. **Nhìn thấy** → gửi lại block spawner thật.
-5. Khi player join hoặc teleport, spawner gần đó được ẩn ngay để tránh lộ nháy trước khi kiểm tra xong.
+1. Install **SmartSpawner** and start the server once.
+2. Place the matching JAR in the `plugins/` folder.
+3. Restart the server.
+4. (Optional) Edit `plugins/SSASpawnerAntiESP/config.yml`, then run `/ssaspawnerantiesp reload`.
 
-Block giả theo dimension:
+---
 
-| Dimension | Block giả |
-|-----------|-----------|
+## How it works
+
+1. On enable, loads all spawner coordinates from SmartSpawner.
+2. Periodically checks from each player's eye position to nearby spawners — whether blocks obstruct the view.
+3. **Not visible** → sends a packet to replace the spawner block with a decoy on that player's client.
+4. **Visible** → sends the real spawner block back.
+5. On join or teleport, nearby spawners are hidden immediately to prevent a brief flash before the check completes.
+
+Decoy blocks by dimension:
+
+| Dimension | Decoy block |
+|-----------|-------------|
 | Overworld (y ≥ 0) | Stone |
 | Overworld (y < 0) | Deepslate |
 | Nether | Netherrack |
@@ -68,31 +70,31 @@ Block giả theo dimension:
 
 ---
 
-## Cấu hình
+## Configuration
 
 File: `plugins/SSASpawnerAntiESP/config.yml`
 
-### `settings` — toàn server
+### `settings` — global
 
-| Tuỳ chọn | Mặc định | Mô tả |
-|----------|----------|--------|
-| `update-ticks` | `1` | Số tick giữa mỗi lần gửi packet cập nhật block cho player. |
-| `ms-per-ray-trace-tick` | `50` | Khoảng thời gian (ms) giữa mỗi vòng kiểm tra tầm nhìn. |
-| `ray-trace-threads` | `1` | Số luồng xử lý kiểm tra tầm nhìn. Tăng nếu server nhiều player online. |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `update-ticks` | `1` | Ticks between block update packets per player. |
+| `ms-per-ray-trace-tick` | `50` | Interval (ms) between line-of-sight checks. |
+| `ray-trace-threads` | `1` | Worker threads for line-of-sight checks. Increase on busy servers. |
 
-### `world-settings` — theo từng world
+### `world-settings` — per world
 
-Cấu hình mặc định nằm trong `world-settings.default`. Ghi đè cho world cụ thể: `world-settings.<tên-world>.<tuỳ-chọn>`.
+Defaults live under `world-settings.default`. Override per world: `world-settings.<world-name>.<option>`.
 
-| Tuỳ chọn | Mặc định | Mô tả |
-|----------|----------|--------|
-| `enabled` | `true` | Bật/tắt plugin trong world đó. |
-| `ray-trace-distance` | `64.0` | Khoảng cách tối đa (block) để kiểm tra spawner quanh player. |
-| `rehide-blocks` | `true` | Bật tối ưu: spawner xa hơn `rehide-distance` sẽ được ẩn mà không cần ray trace. |
-| `rehide-distance` | `60.0` | Ngưỡng khoảng cách (block) cho tối ưu `rehide-blocks`. |
-| `section-leap` | `false` | Bỏ qua các vùng 16×16×16 block toàn air khi ray trace (nhanh hơn). Chỉ bật sau khi đã test ổn trên server. |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `enabled` | `true` | Enable or disable the plugin in that world. |
+| `ray-trace-distance` | `64.0` | Max distance (blocks) to check spawners around a player. |
+| `rehide-blocks` | `true` | Optimization: spawners beyond `rehide-distance` are hidden without a ray trace. |
+| `rehide-distance` | `60.0` | Distance threshold (blocks) for the `rehide-blocks` optimization. |
+| `section-leap` | `false` | Skip all-air 16×16×16 sections during ray tracing (faster). Enable only after testing on your server. |
 
-Ví dụ tắt ở world `spawn`:
+Example — disable in world `spawn`:
 
 ```yaml
 world-settings:
@@ -102,16 +104,16 @@ world-settings:
 
 ---
 
-## Lệnh & quyền
+## Commands & permissions
 
-| Lệnh | Quyền | Mô tả |
-|------|-------|--------|
-| `/ssaspawnerantiesp reload` | `ssaspawnerantiesp.command.reload` | Tải lại config và danh sách spawner |
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/ssaspawnerantiesp reload` | `ssaspawnerantiesp.command.reload` | Reload config and re-index spawners |
 
 ---
 
-## Giới hạn cần biết
+## Limitations
 
-- Chỉ ẩn **block spawner** trên client — không phải giải pháp chống hack tuyệt đối (mod outline, particle, v.v. vẫn có thể là vector khác).
-- Block giả có thể **không khớp** block xung quanh (ví dụ đá giữa đất/sand) — đây là trade-off của cách ẩn bằng packet.
-- Cần **đúng JAR** đúng phiên bản Paper; dùng sai bản có thể không load hoặc lỗi.
+- Only hides the **spawner block** on the client — not a complete anti-cheat (outline mods, particles, etc. may still be vectors).
+- Decoy blocks may **not match** surrounding terrain (e.g. stone among dirt/sand) — a trade-off of packet-based hiding.
+- You must use the **correct JAR** for your Paper version; the wrong build may fail to load or error at runtime.
