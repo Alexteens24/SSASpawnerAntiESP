@@ -117,3 +117,9 @@ world-settings:
 - Only hides the **spawner block** on the client — not a complete anti-cheat (outline mods, particles, etc. may still be vectors).
 - Decoy blocks may **not match** surrounding terrain (e.g. stone among dirt/sand) — a trade-off of packet-based hiding.
 - You must use the **correct JAR** for your Paper version; the wrong build may fail to load or error at runtime.
+
+---
+
+## License
+
+[MIT](LICENSE)

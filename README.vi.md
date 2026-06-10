@@ -117,3 +117,9 @@ world-settings:
 - Chỉ ẩn **block spawner** trên client — không phải giải pháp chống hack tuyệt đối (mod outline, particle, v.v. vẫn có thể là vector khác).
 - Block giả có thể **không khớp** block xung quanh (ví dụ đá giữa đất/sand) — đây là trade-off của cách ẩn bằng packet.
 - Cần **đúng JAR** đúng phiên bản Paper; dùng sai bản có thể không load hoặc lỗi.
+
+---
+
+## Giấy phép
+
+[MIT](LICENSE)
