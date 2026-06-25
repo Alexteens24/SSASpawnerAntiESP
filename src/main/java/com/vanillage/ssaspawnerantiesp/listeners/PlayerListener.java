@@ -12,11 +12,11 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.util.Vector;
 
 import com.vanillage.ssaspawnerantiesp.SSASpawnerAntiESP;
-import com.vanillage.ssaspawnerantiesp.data.PlayerSpawnerData;
+import com.vanillage.ssaspawnerantiesp.data.PlayerData;
 import com.vanillage.ssaspawnerantiesp.data.VectorialLocation;
-import com.vanillage.ssaspawnerantiesp.occlusion.SolidOcclusionMask;
 import com.vanillage.ssaspawnerantiesp.tasks.BlockUpdateTask;
 import com.vanillage.ssaspawnerantiesp.tasks.SpawnerRayTraceCallable;
 
@@ -24,34 +24,34 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 public final class PlayerListener implements Listener {
     private final SSASpawnerAntiESP plugin;
-    private final SolidOcclusionMask solidMask;
 
-    public PlayerListener(SSASpawnerAntiESP plugin, SolidOcclusionMask solidMask) {
+    public PlayerListener(SSASpawnerAntiESP plugin) {
         this.plugin = plugin;
-        this.solidMask = solidMask;
     }
 
-    public static void registerExistingPlayers(SSASpawnerAntiESP plugin, SolidOcclusionMask solidMask) {
-        PlayerListener listener = new PlayerListener(plugin, solidMask);
-
+    public static void registerExistingPlayers(SSASpawnerAntiESP plugin) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            listener.register(player);
+            register(plugin, player);
         }
     }
 
-    public static void unregisterAll(SSASpawnerAntiESP plugin) {
+    public static void unregisterAndReregisterAll(SSASpawnerAntiESP plugin) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID id = player.getUniqueId();
-            PlayerSpawnerData data = plugin.getPlayerData().remove(id);
+            PlayerData data = plugin.getPlayerData().remove(id);
 
             if (data != null && data.getBlockUpdateTask() != null) {
                 data.getBlockUpdateTask().cancel();
             }
+
+            plugin.clearPendingChunkBlocksFor(id);
         }
+
+        registerExistingPlayers(plugin);
     }
 
-    private void register(Player player) {
-        if (!player.isOnline()) {
+    public static void register(SSASpawnerAntiESP plugin, Player player) {
+        if (!plugin.validatePlayer(player)) {
             return;
         }
 
@@ -59,9 +59,8 @@ public final class PlayerListener implements Listener {
             return;
         }
 
-        Location eye = player.getEyeLocation();
-        PlayerSpawnerData playerData = new PlayerSpawnerData(new VectorialLocation(eye));
-        playerData.setCallable(new SpawnerRayTraceCallable(plugin, playerData, plugin.getSpawnerIndex(), solidMask));
+        PlayerData playerData = new PlayerData(SSASpawnerAntiESP.getLocations(player, new VectorialLocation(player.getEyeLocation())));
+        playerData.setCallable(new SpawnerRayTraceCallable(plugin, playerData));
         plugin.getPlayerData().put(player.getUniqueId(), playerData);
 
         ScheduledTask updateTask = player.getScheduler().runAtFixedRate(
@@ -76,18 +75,9 @@ public final class PlayerListener implements Listener {
         player.getScheduler().run(
             plugin,
             task -> {
-                if (!player.isOnline()) {
-                    return;
+                if (player.isOnline()) {
+                    BlockUpdateTask.hideNearbySpawners(plugin, player);
                 }
-
-                PlayerSpawnerData data = plugin.getPlayerData().get(player.getUniqueId());
-
-                if (data == null) {
-                    return;
-                }
-
-                PlayerSpawnerData.syncEyeFromPlayer(player, data);
-                BlockUpdateTask.hideNearbySpawners(plugin, player, data);
             },
             null
         );
@@ -95,27 +85,30 @@ public final class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        register(event.getPlayer());
+        register(plugin, event.getPlayer());
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        PlayerSpawnerData data = plugin.getPlayerData().remove(id);
+        PlayerData data = plugin.getPlayerData().remove(id);
 
         if (data != null && data.getBlockUpdateTask() != null) {
             data.getBlockUpdateTask().cancel();
         }
+
+        plugin.clearPendingChunkBlocksFor(id);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        Location from = event.getFrom();
         Location to = event.getTo();
 
         if (to == null) {
             return;
         }
+
+        Location from = event.getFrom();
 
         if (from.getX() == to.getX() && from.getY() == to.getY() && from.getZ() == to.getZ()
             && from.getYaw() == to.getYaw() && from.getPitch() == to.getPitch()) {
@@ -123,25 +116,23 @@ public final class PlayerListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        PlayerSpawnerData playerData = plugin.getPlayerData().get(player.getUniqueId());
+        PlayerData playerData = plugin.getPlayerData().get(player.getUniqueId());
 
         if (playerData == null) {
             return;
         }
 
-        Location eye = to.clone();
-        eye.setY(eye.getY() + player.getEyeHeight());
-        VectorialLocation location = playerData.getEyeLocation();
-
-        if (!location.syncFrom(eye)) {
-            playerData.setEyeLocation(new VectorialLocation(eye));
+        if (to.getWorld().equals(playerData.getLocations()[0].getWorld())) {
+            VectorialLocation location = new VectorialLocation(to);
+            location.getVector().setY(location.getVector().getY() + player.getEyeHeight());
+            playerData.setLocations(SSASpawnerAntiESP.getLocations(player, location));
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         Player player = event.getPlayer();
-        PlayerSpawnerData playerData = plugin.getPlayerData().get(player.getUniqueId());
+        PlayerData playerData = plugin.getPlayerData().get(player.getUniqueId());
 
         if (playerData == null) {
             return;
@@ -154,14 +145,15 @@ public final class PlayerListener implements Listener {
                     return;
                 }
 
-                PlayerSpawnerData data = plugin.getPlayerData().get(player.getUniqueId());
+                PlayerData data = plugin.getPlayerData().get(player.getUniqueId());
 
                 if (data == null) {
                     return;
                 }
 
-                PlayerSpawnerData.syncEyeFromPlayer(player, data);
-                BlockUpdateTask.hideNearbySpawners(plugin, player, data);
+                data.setLocations(SSASpawnerAntiESP.getLocations(player, new VectorialLocation(player.getEyeLocation())));
+                data.getChunks().clear();
+                BlockUpdateTask.hideNearbySpawners(plugin, player);
             },
             null
         );

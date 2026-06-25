@@ -2,13 +2,19 @@ package com.vanillage.ssaspawnerantiesp.data;
 
 import net.minecraft.core.BlockPos;
 
-public final class VisibilityResult {
+public final class Result {
+    private final ChunkBlocks chunkBlocks;
     private final BlockPos block;
     private final boolean visible;
 
-    public VisibilityResult(BlockPos block, boolean visible) {
+    public Result(ChunkBlocks chunkBlocks, BlockPos block, boolean visible) {
+        this.chunkBlocks = chunkBlocks;
         this.block = block;
         this.visible = visible;
+    }
+
+    public ChunkBlocks getChunkBlocks() {
+        return chunkBlocks;
     }
 
     public BlockPos getBlock() {

@@ -1,7 +1,10 @@
 package com.vanillage.ssaspawnerantiesp.tasks;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 import org.bukkit.Location;
@@ -12,8 +15,12 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import com.vanillage.ssaspawnerantiesp.SSASpawnerAntiESP;
-import com.vanillage.ssaspawnerantiesp.data.PlayerSpawnerData;
-import com.vanillage.ssaspawnerantiesp.data.VisibilityResult;
+import com.vanillage.ssaspawnerantiesp.antixray.SpawnerChunkPacketBlockController;
+import com.vanillage.ssaspawnerantiesp.data.ChunkBlocks;
+import com.vanillage.ssaspawnerantiesp.data.LongWrapper;
+import com.vanillage.ssaspawnerantiesp.data.PlayerData;
+import com.vanillage.ssaspawnerantiesp.data.Result;
+import com.vanillage.ssaspawnerantiesp.data.VectorialLocation;
 import com.vanillage.ssaspawnerantiesp.nms.NmsCompat;
 
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
@@ -36,7 +43,12 @@ public final class BlockUpdateTask implements Consumer<ScheduledTask> {
         this.player = player;
     }
 
-    public static void hideNearbySpawners(SSASpawnerAntiESP plugin, Player player, PlayerSpawnerData playerData) {
+    @Override
+    public void accept(ScheduledTask task) {
+        update(player);
+    }
+
+    public static void hideNearbySpawners(SSASpawnerAntiESP plugin, Player player) {
         World world = player.getWorld();
 
         if (!plugin.isEnabled(world)) {
@@ -56,6 +68,7 @@ public final class BlockUpdateTask implements Consumer<ScheduledTask> {
             return;
         }
 
+        ServerLevel serverLevel = ((CraftWorld) world).getHandle();
         Environment environment = world.getEnvironment();
         List<Packet<?>> packets = new ArrayList<>();
 
@@ -64,59 +77,101 @@ public final class BlockUpdateTask implements Consumer<ScheduledTask> {
                 continue;
             }
 
-            playerData.getHiddenByClient().put(PlayerSpawnerData.blockKey(block), true);
-            packets.add(new ClientboundBlockUpdatePacket(block, decoyState(environment, block.getY())));
+            if (!serverLevel.getBlockState(block).is(Blocks.SPAWNER)) {
+                continue;
+            }
+
+            packets.add(new ClientboundBlockUpdatePacket(block, SpawnerChunkPacketBlockController.decoyState(environment, block.getY())));
         }
 
         sendPackets(player, packets);
     }
 
-    @Override
-    public void accept(ScheduledTask task) {
-        PlayerSpawnerData playerData = plugin.getPlayerData().get(player.getUniqueId());
+    public void update(Player player) {
+        PlayerData playerData = plugin.getPlayerData().get(player.getUniqueId());
 
-        if (playerData == null || !player.isOnline()) {
+        if (!plugin.validatePlayerData(player, playerData, "update")) {
             return;
         }
 
-        PlayerSpawnerData.syncEyeFromPlayer(player, playerData);
+        VectorialLocation eye = playerData.getLocations()[0];
+        World world = eye.getWorld();
 
-        World world = player.getWorld();
-
-        if (!plugin.isEnabled(world)) {
+        if (world == null || !player.getWorld().equals(world)) {
             return;
         }
 
+        ConcurrentMap<LongWrapper, ChunkBlocks> chunks = playerData.getChunks();
         ServerLevel serverLevel = ((CraftWorld) world).getHandle();
         Environment environment = world.getEnvironment();
-        List<Packet<?>> packets = new ArrayList<>();
-        VisibilityResult result;
+        Queue<Result> results = playerData.getResults();
+        Result result;
+        List<Packet<?>> packetsToSend = new ArrayList<>();
 
-        while ((result = playerData.getResults().poll()) != null) {
+        while ((result = results.poll()) != null) {
+            ChunkBlocks chunkBlocks = result.getChunkBlocks();
+
+            if (chunkBlocks.getChunk() == null || chunks.get(chunkBlocks.getKey()) != chunkBlocks) {
+                continue;
+            }
+
             BlockPos block = result.getBlock();
 
             if (!world.isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)) {
                 continue;
             }
 
+            BlockState serverState = serverLevel.getBlockState(block);
             BlockState blockState;
             BlockEntity blockEntity = null;
 
             if (result.isVisible()) {
-                blockState = serverLevel.getBlockState(block);
-
-                if (blockState.getBlock() != Blocks.SPAWNER) {
+                if (serverState.getBlock() != Blocks.SPAWNER) {
                     continue;
                 }
+
+                blockState = serverState;
 
                 if (blockState.hasBlockEntity()) {
                     blockEntity = serverLevel.getBlockEntity(block);
                 }
             } else {
-                blockState = decoyState(environment, block.getY());
+                if (!serverState.is(Blocks.SPAWNER)) {
+                    blockState = serverState;
+                } else {
+                    blockState = SpawnerChunkPacketBlockController.decoyState(environment, block.getY());
+                }
             }
 
-            packets.add(new ClientboundBlockUpdatePacket(block, blockState));
+            packetsToSend.add(new ClientboundBlockUpdatePacket(block, blockState));
+
+            if (blockEntity != null) {
+                Packet<ClientGamePacketListener> bePacket = blockEntity.getUpdatePacket();
+
+                if (bePacket != null) {
+                    packetsToSend.add(bePacket);
+                }
+            }
+        }
+
+        sendPackets(player, packetsToSend);
+    }
+
+    public static void syncServerBlock(SSASpawnerAntiESP plugin, Player player, Location location) {
+        PlayerData playerData = plugin.getPlayerData().get(player.getUniqueId());
+
+        if (playerData == null || location.getWorld() == null) {
+            return;
+        }
+
+        ServerLevel serverLevel = ((CraftWorld) location.getWorld()).getHandle();
+        BlockPos block = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+        BlockState blockState = serverLevel.getBlockState(block);
+        List<Packet<?>> packets = new ArrayList<>();
+        packets.add(new ClientboundBlockUpdatePacket(block, blockState));
+
+        if (blockState.hasBlockEntity()) {
+            BlockEntity blockEntity = serverLevel.getBlockEntity(block);
 
             if (blockEntity != null) {
                 Packet<ClientGamePacketListener> bePacket = blockEntity.getUpdatePacket();
@@ -130,20 +185,19 @@ public final class BlockUpdateTask implements Consumer<ScheduledTask> {
         sendPackets(player, packets);
     }
 
-    private static BlockState decoyState(Environment environment, int y) {
-        if (environment == Environment.NETHER) {
-            return Blocks.NETHERRACK.defaultBlockState();
+    public static void removeBlockFromPlayerState(PlayerData playerData, BlockPos block) {
+        for (ChunkBlocks chunkBlocks : playerData.getChunks().values()) {
+            chunkBlocks.getBlocks().remove(block);
         }
 
-        if (environment == Environment.THE_END) {
-            return Blocks.END_STONE.defaultBlockState();
-        }
+        Queue<Result> results = playerData.getResults();
+        Iterator<Result> iterator = results.iterator();
 
-        if (y < 0) {
-            return Blocks.DEEPSLATE.defaultBlockState();
+        while (iterator.hasNext()) {
+            if (iterator.next().getBlock().equals(block)) {
+                iterator.remove();
+            }
         }
-
-        return Blocks.STONE.defaultBlockState();
     }
 
     private static void sendPackets(Player player, List<Packet<?>> packets) {

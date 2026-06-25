@@ -11,6 +11,18 @@ public final class NmsCompat {
         return ChunkPos.pack(chunkX, chunkZ);
     }
 
+    public static long chunkPosKey(ChunkPos chunkPos) {
+        return chunkPos.pack();
+    }
+
+    public static int chunkX(ChunkPos chunkPos) {
+        return chunkPos.x();
+    }
+
+    public static int chunkZ(ChunkPos chunkPos) {
+        return chunkPos.z();
+    }
+
     public static boolean isConnectionDisconnected(ServerGamePacketListenerImpl connection) {
         return connection.isDisconnected();
     }

@@ -45,12 +45,14 @@ repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://jitpack.io")
+    maven("https://repo.codemc.io/repository/maven-releases/")
 }
 
 dependencies {
     paperweight.paperDevBundle(paperTarget.paperVersion)
     val smartSpawnerVersion = if (paperTarget.javaVersion >= 25) "1.6.7" else "1.6.2"
     compileOnly("com.github.NighterDevelopment:SmartSpawner:$smartSpawnerVersion")
+    compileOnly("com.github.retrooper:packetevents-spigot:2.12.1")
 }
 
 paperweight.reobfArtifactConfiguration = ReobfArtifactConfiguration.MOJANG_PRODUCTION

@@ -1,0 +1,54 @@
+package com.vanillage.ssaspawnerantiesp.data;
+
+import java.util.Queue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
+public final class PlayerData implements Callable<Void> {
+    private volatile VectorialLocation[] locations;
+    private final ConcurrentMap<LongWrapper, ChunkBlocks> chunks = new ConcurrentHashMap<>();
+    private final Queue<Result> results = new ConcurrentLinkedQueue<>();
+    private Callable<Void> callable;
+    private volatile ScheduledTask blockUpdateTask;
+
+    public PlayerData(VectorialLocation[] locations) {
+        this.locations = locations;
+    }
+
+    public VectorialLocation[] getLocations() {
+        return locations;
+    }
+
+    public void setLocations(VectorialLocation[] locations) {
+        this.locations = locations;
+    }
+
+    public ConcurrentMap<LongWrapper, ChunkBlocks> getChunks() {
+        return chunks;
+    }
+
+    public Queue<Result> getResults() {
+        return results;
+    }
+
+    public void setCallable(Callable<Void> callable) {
+        this.callable = callable;
+    }
+
+    public ScheduledTask getBlockUpdateTask() {
+        return blockUpdateTask;
+    }
+
+    public void setBlockUpdateTask(ScheduledTask blockUpdateTask) {
+        this.blockUpdateTask = blockUpdateTask;
+    }
+
+    @Override
+    public Void call() throws Exception {
+        return callable.call();
+    }
+}

@@ -22,9 +22,10 @@ Hỗ trợ **Paper** và **Folia**.
 |------------|-----------|
 | Server | **Paper** `1.21.11` hoặc `26.1.2` |
 | SmartSpawner | `1.6.2+` (Paper 1.21.11) · `1.6.7+` (Paper 26.1.2) |
+| PacketEvents | `2.12.1+` |
 | Java | `21` (Paper 1.21.11) · `25` (Paper 26.1.2) |
 
-**Bắt buộc** cài SmartSpawner trước. SSASpawnerAntiESP sẽ tự tắt nếu không tìm thấy SmartSpawner API.
+**Bắt buộc** cài **SmartSpawner** và **PacketEvents** trước. SSASpawnerAntiESP sẽ tự tắt nếu không tìm thấy SmartSpawner API.
 
 ---
 
@@ -46,7 +47,7 @@ Tải tại:
 
 ## Cài đặt
 
-1. Cài **SmartSpawner** và khởi động server một lần.
+1. Cài **SmartSpawner** và **PacketEvents**, khởi động server một lần.
 2. Copy file JAR đúng phiên bản vào thư mục `plugins/`.
 3. Khởi động lại server.
 4. (Tuỳ chọn) Chỉnh `plugins/SSASpawnerAntiESP/config.yml` rồi dùng `/ssaspawnerantiesp reload`.
@@ -55,11 +56,15 @@ Tải tại:
 
 ## Cách hoạt động
 
-1. Khi bật plugin, lấy danh sách tọa độ spawner từ SmartSpawner.
-2. Định kỳ kiểm tra từ vị trí mắt player tới các spawner gần đó — có bị block che hay không.
-3. **Không nhìn thấy** → gửi packet thay block spawner bằng block giả trên client player đó.
-4. **Nhìn thấy** → gửi lại block spawner thật.
-5. Khi player join hoặc teleport, spawner gần đó được ẩn ngay để tránh lộ nháy trước khi kiểm tra xong.
+Plugin dùng kiến trúc tương tự [RayTraceAntiXray](https://github.com/AdvancedAntiXray/RayTraceAntiXray), chỉnh cho spawner:
+
+1. **Chunk obfuscation** — khi Paper gửi chunk tới client, spawner được thay bằng block giả (đá, deepslate, …) trong packet; block entity spawner bị gỡ khỏi packet.
+2. **PacketEvents** — đồng bộ danh sách spawner cần ray trace sau khi chunk packet đã gửi.
+3. **Ray trace async** — kiểm tra line of sight từ mắt player (và góc third-person nếu bật) tới từng spawner trong chunk đã load.
+4. **Block update** — có LOS → gửi spawner thật; không có → giữ block giả trên client.
+5. **Join / teleport** — spawner gần player được ẩn ngay (từ index SmartSpawner) để tránh nháy trước khi chunk obfuscate kịp.
+
+SmartSpawner index dùng để đồng bộ place/break và ẩn nhanh lúc join; ẩn/hiện runtime chủ yếu qua spawner thật trong chunk.
 
 Block giả theo dimension:
 
@@ -92,9 +97,11 @@ Cấu hình mặc định nằm trong `world-settings.default`. Ghi đè cho wor
 |----------|----------|--------|
 | `enabled` | `true` | Bật/tắt plugin trong world đó. |
 | `ray-trace-distance` | `64.0` | Khoảng cách tối đa (block) để kiểm tra spawner quanh player. |
+| `ray-trace-third-person` | `false` | Ray trace thêm từ góc third-person (F5) — hữu ích khi camera lệch khỏi mắt player. |
 | `rehide-blocks` | `true` | Bật tối ưu: spawner xa hơn `rehide-distance` sẽ được ẩn mà không cần ray trace. |
 | `rehide-distance` | `60.0` | Ngưỡng khoảng cách (block) cho tối ưu `rehide-blocks`. |
 | `section-leap` | `false` | Bỏ qua các vùng 16×16×16 block toàn air khi ray trace (nhanh hơn). Chỉ bật sau khi đã test ổn trên server. |
+| `max-ray-trace-block-count-per-chunk` | `64` | Số spawner tối đa ray trace mỗi chunk (obfuscation Paper). |
 
 Ví dụ tắt ở world `spawn`:
 
@@ -117,6 +124,8 @@ world-settings:
 ## Giới hạn cần biết
 
 - Chỉ ẩn **block spawner** trên client — không phải giải pháp chống hack tuyệt đối (mod outline, particle, v.v. vẫn có thể là vector khác).
+- **Không chạy cùng [RayTraceAntiXray](https://github.com/AdvancedAntiXray/RayTraceAntiXray)** trên cùng world — cả hai đều chiếm `chunkPacketBlockController` của Paper.
+- Khi `enabled: false` cho một world, plugin khôi phục anti-xray ore mặc định của Paper (nếu server bật engine-mode `HIDE`).
 - Block giả có thể **không khớp** block xung quanh (ví dụ đá giữa đất/sand) — đây là trade-off của cách ẩn bằng packet.
 - Cần **đúng JAR** đúng phiên bản Paper; dùng sai bản có thể không load hoặc lỗi.
 

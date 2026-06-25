@@ -16,6 +16,12 @@ public final class VectorialLocation {
         this(location.getWorld(), location.toVector(), location.getDirection());
     }
 
+    public VectorialLocation(VectorialLocation location) {
+        world = location.world;
+        vector = location.getVector().clone();
+        direction = location.getDirection().clone();
+    }
+
     public VectorialLocation(World world, Vector vector, Vector direction) {
         this.world = new WeakReference<>(world);
         this.vector = vector;

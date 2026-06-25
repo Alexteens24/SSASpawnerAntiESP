@@ -1,5 +1,7 @@
 package com.vanillage.ssaspawnerantiesp.listeners;
 
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -23,7 +25,8 @@ public final class SpawnerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSpawnerBreak(SpawnerBreakEvent event) {
-        plugin.getSpawnerIndex().remove(event.getLocation());
-        plugin.clearClientStateFor(event.getLocation());
+        Location location = event.getLocation();
+        boolean stillSpawner = location.getBlock().getType() == Material.SPAWNER;
+        plugin.onSpawnerBlockChanged(location, stillSpawner);
     }
 }

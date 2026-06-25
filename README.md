@@ -22,9 +22,10 @@ Supports **Paper** and **Folia**.
 |-----------|---------|
 | Server | **Paper** `1.21.11` or `26.1.2` |
 | SmartSpawner | `1.6.2+` (Paper 1.21.11) · `1.6.7+` (Paper 26.1.2) |
+| PacketEvents | `2.12.1+` |
 | Java | `21` (Paper 1.21.11) · `25` (Paper 26.1.2) |
 
-**SmartSpawner must be installed first.** SSASpawnerAntiESP disables itself if the SmartSpawner API is unavailable.
+**SmartSpawner** and **PacketEvents** must be installed first. SSASpawnerAntiESP disables itself if the SmartSpawner API is unavailable.
 
 ---
 
@@ -46,7 +47,7 @@ Available from:
 
 ## Installation
 
-1. Install **SmartSpawner** and start the server once.
+1. Install **SmartSpawner** and **PacketEvents**, then start the server once.
 2. Place the matching JAR in the `plugins/` folder.
 3. Restart the server.
 4. (Optional) Edit `plugins/SSASpawnerAntiESP/config.yml`, then run `/ssaspawnerantiesp reload`.
@@ -55,11 +56,15 @@ Available from:
 
 ## How it works
 
-1. On enable, loads all spawner coordinates from SmartSpawner.
-2. Periodically checks from each player's eye position to nearby spawners — whether blocks obstruct the view.
-3. **Not visible** → sends a packet to replace the spawner block with a decoy on that player's client.
-4. **Visible** → sends the real spawner block back.
-5. On join or teleport, nearby spawners are hidden immediately to prevent a brief flash before the check completes.
+Uses an architecture similar to [RayTraceAntiXray](https://github.com/AdvancedAntiXray/RayTraceAntiXray), adapted for spawners:
+
+1. **Chunk obfuscation** — when Paper sends a chunk to the client, spawners are replaced with decoy blocks (stone, deepslate, etc.) in the packet; spawner block entities are stripped from the packet.
+2. **PacketEvents** — syncs the spawner list for ray tracing after the chunk packet is sent.
+3. **Async ray trace** — checks line of sight from the player's eye (and third-person camera if enabled) to each spawner in loaded chunks.
+4. **Block updates** — clear LOS → send the real spawner; obstructed → keep the decoy on the client.
+5. **Join / teleport** — nearby spawners are hidden immediately (from the SmartSpawner index) to prevent a flash before chunk obfuscation applies.
+
+The SmartSpawner index tracks place/break and enables fast hide on join; runtime show/hide is driven mainly by real spawner blocks in chunks.
 
 Decoy blocks by dimension:
 
@@ -92,9 +97,11 @@ Defaults live under `world-settings.default`. Override per world: `world-setting
 |--------|---------|-------------|
 | `enabled` | `true` | Enable or disable the plugin in that world. |
 | `ray-trace-distance` | `64.0` | Max distance (blocks) to check spawners around a player. |
+| `ray-trace-third-person` | `false` | Also ray trace from third-person (F5) camera — useful when the camera offset differs from the eye. |
 | `rehide-blocks` | `true` | Optimization: spawners beyond `rehide-distance` are hidden without a ray trace. |
 | `rehide-distance` | `60.0` | Distance threshold (blocks) for the `rehide-blocks` optimization. |
 | `section-leap` | `false` | Skip all-air 16×16×16 sections during ray tracing (faster). Enable only after testing on your server. |
+| `max-ray-trace-block-count-per-chunk` | `64` | Max spawners to ray trace per chunk (Paper obfuscation limit). |
 
 Example — disable in world `spawn`:
 
@@ -117,6 +124,8 @@ world-settings:
 ## Limitations
 
 - Only hides the **spawner block** on the client — not a complete anti-cheat (outline mods, particles, etc. may still be vectors).
+- **Do not run alongside [RayTraceAntiXray](https://github.com/AdvancedAntiXray/RayTraceAntiXray)** on the same world — both replace Paper's `chunkPacketBlockController`.
+- When `enabled: false` for a world, the plugin restores Paper's default ore anti-xray controller (if the server uses engine-mode `HIDE`).
 - Decoy blocks may **not match** surrounding terrain (e.g. stone among dirt/sand) — a trade-off of packet-based hiding.
 - You must use the **correct JAR** for your Paper version; the wrong build may fail to load or error at runtime.
 

@@ -5,6 +5,7 @@ api-version: '${apiVersion}'
 description: Hides SmartSpawner blocks without line of sight using async DDA ray tracing.
 load: POSTWORLD
 depend:
+- packetevents
 - SmartSpawner
 folia-supported: true
 commands:

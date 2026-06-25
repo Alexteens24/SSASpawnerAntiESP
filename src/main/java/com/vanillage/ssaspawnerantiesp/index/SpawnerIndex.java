@@ -14,7 +14,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 import com.vanillage.ssaspawnerantiesp.nms.NmsCompat;
-import com.vanillage.ssaspawnerantiesp.occlusion.WorldOcclusionGetter;
 
 import github.nighter.smartspawner.api.SmartSpawnerAPI;
 import github.nighter.smartspawner.api.data.SpawnerDataDTO;
@@ -38,7 +37,7 @@ public final class SpawnerIndex {
 
         BlockPos pos = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
         UUID worldId = location.getWorld().getUID();
-        long chunkKey = WorldOcclusionGetter.chunkKey(pos.getX() >> 4, pos.getZ() >> 4);
+        long chunkKey = NmsCompat.chunkKey(pos.getX() >> 4, pos.getZ() >> 4);
         CopyOnWriteArrayList<BlockPos> list = byWorld
             .computeIfAbsent(worldId, ignored -> new ConcurrentHashMap<>())
             .computeIfAbsent(chunkKey, ignored -> new CopyOnWriteArrayList<>());
@@ -61,7 +60,7 @@ public final class SpawnerIndex {
             return;
         }
 
-        long chunkKey = WorldOcclusionGetter.chunkKey(pos.getX() >> 4, pos.getZ() >> 4);
+        long chunkKey = NmsCompat.chunkKey(pos.getX() >> 4, pos.getZ() >> 4);
         CopyOnWriteArrayList<BlockPos> list = chunks.get(chunkKey);
 
         if (list != null) {
