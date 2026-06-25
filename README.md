@@ -31,24 +31,25 @@ Supports **Paper** and **Folia**.
 
 ## Download
 
-Use the **correct JAR** for your Paper version:
+One **universal JAR** works on all supported Paper versions (no classifier suffix). Version-specific NMS bindings (`paper_1_21_11`, `paper_26_1_2`) are bundled and selected at runtime via `NmsBridge` (same approach as [RayTraceAntiXray](https://github.com/Alexteens24/RayTraceAntiXray)).
 
-| Paper version | File name |
-|---------------|-----------|
-| 1.21.11 | `SSASpawnerAntiESP-*-1.21.11.jar` |
-| 26.1.2 | `SSASpawnerAntiESP-*-26.1.2.jar` |
+| File name |
+|-----------|
+| `SSASpawnerAntiESP-<version>.jar` |
 
 Available from:
 
 - [Releases](https://github.com/Alexteens24/SSASpawnerAntiESP/releases) (official builds)
 - [GitHub Actions](https://github.com/Alexteens24/SSASpawnerAntiESP/actions) → latest workflow run → **Artifacts**
 
+Build locally: `./gradlew shadowJar` → `build/libs/SSASpawnerAntiESP-<version>.jar`
+
 ---
 
 ## Installation
 
 1. Install **SmartSpawner** and **PacketEvents**, then start the server once.
-2. Place the matching JAR in the `plugins/` folder.
+2. Place the JAR in the `plugins/` folder.
 3. Restart the server.
 4. (Optional) Edit `plugins/SSASpawnerAntiESP/config.yml`, then run `/ssaspawnerantiesp reload`.
 
@@ -127,7 +128,6 @@ world-settings:
 - **Do not run alongside [RayTraceAntiXray](https://github.com/AdvancedAntiXray/RayTraceAntiXray)** on the same world — both replace Paper's `chunkPacketBlockController`.
 - When `enabled: false` for a world, the plugin restores Paper's default ore anti-xray controller (if the server uses engine-mode `HIDE`).
 - Decoy blocks may **not match** surrounding terrain (e.g. stone among dirt/sand) — a trade-off of packet-based hiding.
-- You must use the **correct JAR** for your Paper version; the wrong build may fail to load or error at runtime.
 
 ---
 

@@ -1,7 +1,7 @@
 name: SSASpawnerAntiESP
 main: com.vanillage.ssaspawnerantiesp.SSASpawnerAntiESP
 version: ${pluginVersion}
-api-version: '${apiVersion}'
+api-version: '1.21.11'
 description: Hides SmartSpawner blocks without line of sight using async DDA ray tracing.
 load: POSTWORLD
 depend:

@@ -3,6 +3,9 @@ pluginManagement {
         gradlePluginPortal()
         maven("https://repo.papermc.io/repository/maven-public/")
     }
+    plugins {
+        id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
+    }
 }
 
 plugins {
@@ -10,3 +13,5 @@ plugins {
 }
 
 rootProject.name = "SSASpawnerAntiESP"
+
+include("paper_1_21_11", "paper_26_1_2")

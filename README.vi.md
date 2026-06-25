@@ -31,24 +31,25 @@ Hỗ trợ **Paper** và **Folia**.
 
 ## Tải plugin
 
-Chọn **đúng file JAR** theo phiên bản Paper server:
+Một **JAR universal** dùng được cho mọi phiên bản Paper được hỗ trợ (không có hậu tố classifier):
 
-| Phiên bản Paper | Tên file |
-|-----------------|----------|
-| 1.21.11 | `SSASpawnerAntiESP-*-1.21.11.jar` |
-| 26.1.2 | `SSASpawnerAntiESP-*-26.1.2.jar` |
+| Tên file |
+|----------|
+| `SSASpawnerAntiESP-<version>.jar` |
 
 Tải tại:
 
 - [Releases](https://github.com/Alexteens24/SSASpawnerAntiESP/releases) (bản phát hành chính thức)
 - [GitHub Actions](https://github.com/Alexteens24/SSASpawnerAntiESP/actions) → chọn workflow run mới nhất → mục **Artifacts**
 
+Build local: `./gradlew shadowJar` → `build/libs/SSASpawnerAntiESP-<version>.jar`
+
 ---
 
 ## Cài đặt
 
 1. Cài **SmartSpawner** và **PacketEvents**, khởi động server một lần.
-2. Copy file JAR đúng phiên bản vào thư mục `plugins/`.
+2. Copy file JAR vào thư mục `plugins/`.
 3. Khởi động lại server.
 4. (Tuỳ chọn) Chỉnh `plugins/SSASpawnerAntiESP/config.yml` rồi dùng `/ssaspawnerantiesp reload`.
 
@@ -127,8 +128,6 @@ world-settings:
 - **Không chạy cùng [RayTraceAntiXray](https://github.com/AdvancedAntiXray/RayTraceAntiXray)** trên cùng world — cả hai đều chiếm `chunkPacketBlockController` của Paper.
 - Khi `enabled: false` cho một world, plugin khôi phục anti-xray ore mặc định của Paper (nếu server bật engine-mode `HIDE`).
 - Block giả có thể **không khớp** block xung quanh (ví dụ đá giữa đất/sand) — đây là trade-off của cách ẩn bằng packet.
-- Cần **đúng JAR** đúng phiên bản Paper; dùng sai bản có thể không load hoặc lỗi.
-
 ---
 
 ## Giấy phép
